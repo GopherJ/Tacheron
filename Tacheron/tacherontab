@@ -1,0 +1,154 @@
+#!/bin/bash
+
+#Author leavesdrift
+#mercredi 24 mai 2017, 00:05:26 (UTC+0200)
+#------------------------------------------
+user=$(whoami)
+TACHERON="/etc/tacheron/"
+TACHETAB="/etc/tacheron/tacherontab"
+TMP="/tmp/tacheron/"
+TMPTAB="/tmp/tacheron/tacherontab"
+DENY="/etc/tacheron/tacheron.deny"
+ALLOW="/etc/tacheron/tacheron.allow"
+#-----------------------------------------
+init () {
+   if [ ! -d $TACHERON ];then
+       mkdir $TACHERON
+   fi
+   if [ ! -d $TMP ];then
+      mkdir $TMP
+   fi
+   if [ ! -f $DENY ];then
+      touch $DENY
+   fi
+   if [ ! -f $ALLOW ];then
+      touch $ALLOW
+   fi
+   while read allow
+   do
+       if [ $(groups $allow|grep -c 'tacheron') -eq 0 ];then
+             echo "$allow n'est pas dans le group tacheron"
+              sudo usermod -a -G tacheron $allow
+       fi
+       
+   done < $ALLOW
+}
+#----------------------------------------
+init
+#----------------------------------------
+if [ $(cat $DENY|grep -c $user) -ne 0 ];then
+   DROIT="00"
+   echo "Vous êtes bloqué!"
+   exit 1
+elif [ "$user" == "root" ];then
+   DROIT="11"
+elif [ $(cat $ALLOW|grep -c $user) -ne 0 ];then
+   DROIT="10"
+else
+   echo "Utilisateur inconnu"
+   exit 0
+fi
+#----------------------------------------
+if [ $# -eq 0 ];then
+  echo "Notice the format:tacherontab [-u user] {-l | -r | -e}"
+elif [ $# -gt 3 ];then
+  echo "too many arguments";echo "try: tacheron --help"
+elif [ $# -eq 1 ];then
+  case $1 in
+   -l) cat $TACHETAB$user;;
+   -r) rm -i $TACHETAB$user;;
+   -e) if [ -f $TACHETAB$user ];then
+            vi $TACHETAB$user
+       else 
+            vi $TMPTAB$user&&cp $TMPTAB$user $TACHETAB$user
+       fi
+       ;;
+   --help) echo "tacherontab [-u user] {-l | -r | -e}"
+           echo "-l:affiche le fichier tacherontab"
+           echo "-r:supprimer le fichier tacherontab"
+           echo "-e:rediger le fichier tacherontab"
+           ;;
+    *) echo "try:tacheron --help"
+       exit 2
+       ;;
+  esac
+elif [ $# -eq 2 ];then
+  case $1 in
+    -u) case $2 in
+        -l) cat $TACHETAB$user;;
+        -r) rm -i $TACHETAB$user;;
+        -e) if [ -f $TACHETAB$user ];then
+               vi $TACHETAB$user
+            else 
+               vi $TMPTAB$user&&cp $TMPTAB$user $TACHETAB$user
+            fi
+            ;;
+     --help) echo "tacherontab [-u user] {-l | -r | -e}"
+             echo "-l:affiche le fichier tacherontab"
+             echo "-r:supprimer le fichier tacherontab"
+             echo "-e:rediger le fichier tacherontab"
+             ;;
+         *) echo "try:tacheron --help"
+            exit 2
+            ;;
+        esac
+        ;;
+     *) echo "tacheron: invalid option $1"
+            exit 2
+            ;;
+  esac
+
+elif [ $# -eq 3 ];then
+  case $1 in
+    -u)
+        if [ "$DROIT" == "11" ];then
+               user=$2
+           case $3 in
+            -l) cat $TACHETAB$user;;
+            -r) rm -i $TACHETAB$user;;
+            -e) if [ -f $TACHETAB$user ];then
+                     vi $TACHETAB$user
+                else 
+                     vi $TMPTAB$user&&cp $TMPTAB$user $TACHETAB$user
+                fi
+                ;;
+        --help) echo "tacherontab [-u user] {-l | -r | -e}"
+                echo "-l:affiche le fichier tacherontab"
+                echo "-r:supprimer le fichier tacherontab"
+                echo "-e:rediger le fichier tacherontab"
+                ;;
+             *) echo "try:tacheron --help"
+                exit 2
+                ;;
+           esac
+        elif [ "$DROIT" == "10" ];then
+            if [ "$2" != "$user" ];then
+               echo "Vous n'être pas le propriétaire"
+               exit 3
+            else
+               case $3 in
+                -l) cat $TACHETAB$user;;
+                -r) rm -i $TACHETAB$user;;
+                -e) if [ -f $TACHETAB$user ];then
+                       vi $TACHETAB$user
+                    else 
+                       vi $TMPTAB$user&&cp $TMPTAB$user $TACHETAB$user
+                    fi
+                    ;;
+            --help) echo "tacherontab [-u user] {-l | -r | -e}"
+                    echo "-l:affiche le fichier tacherontab"
+                    echo "-r:supprimer le fichier tacherontab"
+                    echo "-e:rediger le fichier tacherontab"
+                    ;;
+                 *) echo "try:tacheron --help"
+                    exit 2
+                    ;;
+               esac
+            fi
+        fi
+        ;;
+     *)  echo "tacheron: invalid option $1"
+         exit 4
+         ;;
+  esac
+fi

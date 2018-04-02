@@ -1,0 +1,12 @@
+#!/bin/bash
+user=$(whoami)
+
+while true
+do
+  for tab in `find /etc/tacheron -regex '^.*tab.*$'`
+  do
+  /home/cheng/Lo14_projet/ReadTachebak  $tab  > /dev/tty1 2>&1
+  done
+sleep 1
+
+done

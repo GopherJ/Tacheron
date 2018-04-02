@@ -1,0 +1,243 @@
+#!/bin/bash 
+
+DATE=$(date|awk -F, '{print $1}')
+TIME=$(date|awk -F, '{print $2}'|awk '{print $1}')
+
+sec=$(echo $TIME|cut -d: -f3)
+sec=$(( ${sec#0} / 15 ))
+
+min=$(echo $TIME|cut -d: -f2)
+min=$(( ${min#0} ))
+
+heure=$(echo $TIME|cut -d: -f1)
+heure=$(( ${heure#0} ))
+
+jour=$(echo $DATE|awk '{print $2}')
+moi=$(echo $DATE|awk '{print $3}')
+
+case $moi in
+janvier|january) moi=1;;
+fevrier|february) moi=2;;
+mars|march) moi=3;;
+avril|april) moi=4;;
+mai|may) moi=5;;
+juin|june) moi=6;;
+juillet|july) moi=7;;
+aôut|august) moi=8;;
+septembre|september) moi=9;;
+octobre|october) moi=10;;
+novembre|november) moi=11;;
+decembre|december) moi=12;;
+*);;
+esac
+
+
+jinsemaine=$(date|awk '{print $1}')
+
+case $jinsemaine in
+lundi|monday) jinsemaine=1;;
+mardi|tuesday) jinsemaine=2;;
+mercredi|wednesday) jinsemaine=3;;
+jeudi|thursday) jinsemaine=4;;
+vendredi|friday) jinsemaine=5;;
+samedi|saturday) jinsemaine=6;;
+dimanche|sunday) jinsemaine=0;;
+*);;
+esac
+
+
+
+
+preTraite () {
+  comma=$(echo $1|grep -c ',')
+  tiret=$(echo $1|grep -c '-')
+  tilde=$(echo $1|grep -c '~')
+if [ $comma -gt 0 ];then
+ range=$(echo $1|cut -d, -f1- --output-delimiter " ")
+elif [ $comma -eq 0 -a $tiret -eq 0 ];then
+ range=$1
+else
+ debut=$(echo $1|awk -F- '{print $1}')
+ range=""
+ if [ $tilde -eq 0 ];then 
+    fin=$(echo $1|awk -F- '{print $2}' )
+    for id in $( seq $debut $fin )
+    do
+         id=" $id"
+         range="$range""$id"
+    done
+ elif [ $tilde -gt 0 ];then
+    fin=$(echo $1|awk -F[-~] '{print $2}')
+    outrange=$(echo $1|cut -d~ -f2- --output-delimiter " ")
+    set $outrange
+    for id in $( seq $debut $fin )
+    do
+          id=" $id"
+          range="$range""$id"
+    done
+    for k in $@
+    do
+          range=${range/$k/}
+    done
+ fi
+fi
+echo $range
+}
+check_champ () { 
+       slache=$(echo "$1"|grep -c '/')
+     if [ $slache -ne 0 ];then
+        t=$(echo "$1"|cut -d/ -f2)
+        case $2 in
+             1) 
+                 k=0
+                 range=""
+                 while [ $k -le 3 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             2) 
+                 k=0
+                 range=""
+                 while [ $k -le 59 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             3) 
+                 k=0
+                 range=""
+                 while [ $k -le 23 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             4) 
+                 k=1
+                 range=""
+                 while [ $k -le 31 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             5) 
+                 k=1
+                 range=""
+                 while [ $k -le 12 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             6)
+                 k=0
+                 range=""
+                 while [ $k -le 6 ]
+                 do
+                   id=" $k"
+                   range="$range""$id"
+                   k=$(( $k + $t ))
+                 done
+                 ;;
+             *);;
+        esac
+        echo $range
+     else
+        etoile=$(printf "%d" "'$1")
+        slache=$(echo "$1"|grep -c '/')
+    #   etoile=$(echo "$w"|tr -d "\n"|od -An -t dC|sed 's/ //g')
+       if [ $etoile -eq 42 -a $slache -eq 0 ];then
+           range=""
+           case $2 in
+            1)
+               for id in $( seq 0 3 )
+               do
+                 id=" $id"
+                 range="$range""$id"
+               done
+               ;;
+             2)
+               for id in $( seq 0 59 )
+               do
+                 id=" $id"  
+                 range="$range""$id"
+               done
+               ;;
+             3)
+               for id in $( seq 0 23 )
+               do
+                 id=" $id"
+                 range="$range""$id" 
+               done  
+               ;;
+             4)
+               for id in $( seq 1 31 )
+               do
+                 id=" $id"
+                 range="$range""$id"
+               done
+               ;;
+             5)
+               for id in $( seq 1 12 )
+               do
+                 id=" $id"
+                 range="$range""$id"
+               done
+               ;;
+             6)
+               for id in $( seq 0 6 )
+               do 
+                 id=" $id"
+                 range="$range""$id"
+               done
+               ;;
+           esac
+         echo $range
+       else
+           preTraite $1
+       fi
+     fi  
+}
+
+
+#---------------
+sed -i '/^$/d' $1
+#--------------
+while  read s mi h j m ji action
+do
+  action="$action"
+  col1=$(check_champ "$s" 1)
+  col2=$(check_champ "$mi" 2)
+  col3=$(check_champ "$h" 3)
+  col4=$(check_champ "$j" 4)
+  col5=$(check_champ "$m" 5) 
+  col6=$(check_champ "$ji" 6)
+     if [  $(echo $col1|grep -c $sec) -ne 0 ];then
+        if [ $(echo $col2|grep -c $min) -ne 0 ];then
+           if [ $(echo $col3|grep -c $heure) -ne 0 ];then
+              if [ $(echo $col4|grep -c $jour) -ne 0 ];then
+                 if [ $(echo $col5|grep -c $moi) -ne 0 ];then
+                    if [ $(echo $col6|grep -c $jinsemaine) -ne 0 ];then
+                                if [ ! -f /var/log/tacheron ];then
+                                      touch /var/log/tacheron
+                                fi
+                                                  $action
+                                                 
+                                if [ $? -eq 0 ];then  echo "$(date) ---------- $action">>/var/log/tacheron
+                                fi
+                    fi
+                 fi
+              fi
+           fi
+        fi
+     fi
+done < $1
